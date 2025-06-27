@@ -1,73 +1,110 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# PagePilot Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend service for PagePilot bookstore platform built with NestJS, Prisma, and SQLite.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Setup Instructions
 
-## Description
+### Prerequisites
+- Node.js 18+
+- npm
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Installation
 
-## Installation
-
+1. Clone the repository and install dependencies:
 ```bash
-$ npm install
+npm install
 ```
 
-## Running the app
-
+2. Set up the database:
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npx prisma generate
+npx prisma migrate dev --name init
+npx prisma db seed
 ```
 
-## Test
-
+3. Start the development server:
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev
 ```
 
-## Support
+The API will be available at `http://localhost:3000`
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Available Scripts
 
-## Stay in touch
+- `npm run start:dev` - Start development server with hot reload
+- `npm run build` - Build for production
+- `npm run start:prod` - Start production server
+- `npm test` - Run tests
+- `npm run prisma:studio` - Open Prisma Studio database browser
+- `npm run db:reset` - Reset database and reseed
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## API Usage Instructions
 
-## License
+### API Documentation
+Interactive API documentation is available at: `http://localhost:3000/api`
 
-Nest is [MIT licensed](LICENSE).
+### Base URL
+```
+http://localhost:3000
+```
+
+### Authors Endpoints
+
+- `GET /authors` - List all authors
+- `POST /authors` - Create a new author
+- `GET /authors/:id` - Get author by ID
+- `PUT /authors/:id` - Update author by ID
+- `DELETE /authors/:id` - Delete author by ID
+
+### Books Endpoints
+
+- `GET /books` - List all books
+- `POST /books` - Create a new book
+- `GET /books/:id` - Get book by ID
+- `PUT /books/:id` - Update book by ID
+- `DELETE /books/:id` - Delete book by ID
+- `GET /books/favorites` - Get all favorite books
+- `PUT /books/:id/favorite` - Toggle book favorite status
+
+### Example Requests
+
+#### Create Author
+```bash
+curl -X POST http://localhost:3000/authors \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "J.K. Rowling",
+    "bio": "British author best known for the Harry Potter series",
+    "birthYear": 1965
+  }'
+```
+
+#### Create Book
+```bash
+curl -X POST http://localhost:3000/books \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Harry Potter and the Philosopher'\''s Stone",
+    "summary": "A young wizard discovers his magical heritage",
+    "publicationYear": 1997,
+    "authorId": "your-author-id-here"
+  }'
+```
+
+#### Get All Books
+```bash
+curl http://localhost:3000/books
+```
+
+#### Toggle Book Favorite
+```bash
+curl -X PUT http://localhost:3000/books/your-book-id/favorite
+```
+
+### Response Format
+
+All responses are in JSON format. Successful responses return the requested data, while errors return an error message with appropriate HTTP status codes.
+
+### Database
+
+The application uses SQLite with Prisma ORM. The database file (`dev.db`) is created automatically in the project root when you run the migration commands.
