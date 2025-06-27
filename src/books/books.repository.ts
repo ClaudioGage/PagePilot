@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IRepository } from '../common/interfaces/repository.interface';
+import { IRepository } from '../utils/interfaces/repository.interfaces';
 import { Book } from './entities/book.entity';
 
 @Injectable()
