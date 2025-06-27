@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url = "file:./dev.db"
+}
+
+model Author {
+  id        String   @id @default(uuid())
+  name      String
+  bio       String
+  birthYear Int      @map("birth_year")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  books     Book[]
+
+  @@map("authors")
+}
+
+model Book {
+  id              String   @id @default(uuid())
+  title           String
+  summary         String
+  publicationYear Int      @map("publication_year")
+  isFavorite      Boolean  @default(false) @map("is_favorite")
+  authorId        String   @map("author_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  author          Author   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("books")
+}

@@ -1,8 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthorsController } from '../src/authors/authors.controller';
 import { AuthorsService } from '../src/authors/authors.service';
-import { AuthorsRepository } from '../src/authors/authors.repository';
-import { BooksRepository } from '../src/books/books.repository';
 import { CreateAuthorDto } from '../src/authors/dto/create-author.dto';
 
 describe('AuthorsController', () => {
@@ -12,7 +10,18 @@ describe('AuthorsController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthorsController],
-      providers: [AuthorsService, AuthorsRepository, BooksRepository],
+      providers: [
+        {
+          provide: AuthorsService,
+          useValue: {
+            create: jest.fn(),
+            findAll: jest.fn(),
+            findOne: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     controller = module.get<AuthorsController>(AuthorsController);
@@ -24,37 +33,35 @@ describe('AuthorsController', () => {
   });
 
   describe('create', () => {
-    it('should create an author', () => {
+    it('should create an author', async () => {
       const createAuthorDto: CreateAuthorDto = {
         name: 'J.K. Rowling',
         bio: 'British author',
         birthYear: 1965,
       };
+      const mockAuthor = { id: '1', ...createAuthorDto };
 
-      const result = controller.create(createAuthorDto);
+      jest.spyOn(service, 'create').mockResolvedValue(mockAuthor);
 
-      expect(result).toBeDefined();
-      expect(result.name).toBe(createAuthorDto.name);
-      expect(result.bio).toBe(createAuthorDto.bio);
-      expect(result.birthYear).toBe(createAuthorDto.birthYear);
-      expect(result.id).toBeDefined();
+      const result = await controller.create(createAuthorDto);
+
+      expect(result).toEqual(mockAuthor);
+      expect(service.create).toHaveBeenCalledWith(createAuthorDto);
     });
   });
 
   describe('findAll', () => {
-    it('should return an array of authors', () => {
-      const createAuthorDto: CreateAuthorDto = {
-        name: 'J.K. Rowling',
-        bio: 'British author',
-        birthYear: 1965,
-      };
+    it('should return an array of authors', async () => {
+      const mockAuthors = [
+        { id: '1', name: 'J.K. Rowling', bio: 'British author', birthYear: 1965 },
+      ];
 
-      service.create(createAuthorDto);
-      const result = controller.findAll();
+      jest.spyOn(service, 'findAll').mockResolvedValue(mockAuthors);
 
-      expect(result).toBeInstanceOf(Array);
-      expect(result.length).toBe(1);
-      expect(result[0].name).toBe(createAuthorDto.name);
+      const result = await controller.findAll();
+
+      expect(result).toEqual(mockAuthors);
+      expect(service.findAll).toHaveBeenCalled();
     });
   });
 });

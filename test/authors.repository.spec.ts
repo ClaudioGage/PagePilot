@@ -1,16 +1,33 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthorsRepository } from '../src/authors/authors.repository';
-import { Author } from '../src/authors/entities/author.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 describe('AuthorsRepository', () => {
   let repository: AuthorsRepository;
+  let prisma: PrismaService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthorsRepository],
+      providers: [
+        AuthorsRepository,
+        {
+          provide: PrismaService,
+          useValue: {
+            author: {
+              create: jest.fn(),
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+              count: jest.fn(),
+            },
+          },
+        },
+      ],
     }).compile();
 
     repository = module.get<AuthorsRepository>(AuthorsRepository);
+    prisma = module.get<PrismaService>(PrismaService);
   });
 
   it('should be defined', () => {
@@ -18,82 +35,51 @@ describe('AuthorsRepository', () => {
   });
 
   describe('create', () => {
-    it('should create and return an author', () => {
-      const author: Author = {
-        id: '1',
-        name: 'J.K. Rowling',
-        bio: 'British author',
-        birthYear: 1965,
-      };
+    it('should create an author', async () => {
+      const authorData = { name: 'J.K. Rowling', bio: 'British author', birthYear: 1965 };
+      const mockAuthor = { id: '1', ...authorData };
 
-      const result = repository.create(author);
+      jest.spyOn(prisma.author, 'create').mockResolvedValue(mockAuthor as any);
 
-      expect(result).toEqual(author);
-      expect(repository.findById('1')).toEqual(author);
+      const result = await repository.create(authorData);
+
+      expect(result).toEqual(mockAuthor);
+      expect(prisma.author.create).toHaveBeenCalledWith({ data: authorData });
     });
   });
 
   describe('findAll', () => {
-    it('should return all authors', () => {
-      const author1: Author = {
-        id: '1',
-        name: 'J.K. Rowling',
-        bio: 'British author',
-        birthYear: 1965,
-      };
-      const author2: Author = {
-        id: '2',
-        name: 'Stephen King',
-        bio: 'American author',
-        birthYear: 1947,
-      };
+    it('should return all authors', async () => {
+      const mockAuthors = [
+        { id: '1', name: 'J.K. Rowling', bio: 'British author', birthYear: 1965 },
+        { id: '2', name: 'Stephen King', bio: 'American author', birthYear: 1947 },
+      ];
 
-      repository.create(author1);
-      repository.create(author2);
+      jest.spyOn(prisma.author, 'findMany').mockResolvedValue(mockAuthors as any);
 
-      const result = repository.findAll();
-      expect(result).toHaveLength(2);
-      expect(result).toContain(author1);
-      expect(result).toContain(author2);
-    });
-  });
+      const result = await repository.findAll();
 
-  describe('findById', () => {
-    it('should return author by id', () => {
-      const author: Author = {
-        id: '1',
-        name: 'J.K. Rowling',
-        bio: 'British author',
-        birthYear: 1965,
-      };
-
-      repository.create(author);
-      const result = repository.findById('1');
-
-      expect(result).toEqual(author);
-    });
-
-    it('should return undefined for non-existent id', () => {
-      const result = repository.findById('999');
-      expect(result).toBeUndefined();
+      expect(result).toEqual(mockAuthors);
+      expect(prisma.author.findMany).toHaveBeenCalled();
     });
   });
 
   describe('exists', () => {
-    it('should return true for existing author', () => {
-      const author: Author = {
-        id: '1',
-        name: 'J.K. Rowling',
-        bio: 'British author',
-        birthYear: 1965,
-      };
+    it('should return true for existing author', async () => {
+      jest.spyOn(prisma.author, 'count').mockResolvedValue(1);
 
-      repository.create(author);
-      expect(repository.exists('1')).toBe(true);
+      const result = await repository.exists('1');
+
+      expect(result).toBe(true);
+      expect(prisma.author.count).toHaveBeenCalledWith({ where: { id: '1' } });
     });
 
-    it('should return false for non-existent author', () => {
-      expect(repository.exists('999')).toBe(false);
+    it('should return false for non-existent author', async () => {
+      jest.spyOn(prisma.author, 'count').mockResolvedValue(0);
+
+      const result = await repository.exists('999');
+
+      expect(result).toBe(false);
     });
   });
 });

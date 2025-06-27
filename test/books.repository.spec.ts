@@ -1,16 +1,32 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BooksRepository } from '../src/books/books.repository';
-import { Book } from '../src/books/entities/book.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 describe('BooksRepository', () => {
   let repository: BooksRepository;
+  let prisma: PrismaService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [BooksRepository],
+      providers: [
+        BooksRepository,
+        {
+          provide: PrismaService,
+          useValue: {
+            book: {
+              create: jest.fn(),
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+            },
+          },
+        },
+      ],
     }).compile();
 
     repository = module.get<BooksRepository>(BooksRepository);
+    prisma = module.get<PrismaService>(PrismaService);
   });
 
   it('should be defined', () => {
@@ -18,87 +34,53 @@ describe('BooksRepository', () => {
   });
 
   describe('create', () => {
-    it('should create and return a book', () => {
-      const book: Book = {
-        id: '1',
+    it('should create a book', async () => {
+      const bookData = {
         title: 'Harry Potter',
         summary: 'A wizard story',
         publicationYear: 1997,
         authorId: 'author-1',
         isFavorite: false,
       };
+      const mockBook = { id: '1', ...bookData };
 
-      const result = repository.create(book);
+      jest.spyOn(prisma.book, 'create').mockResolvedValue(mockBook as any);
 
-      expect(result).toEqual(book);
-      expect(repository.findById('1')).toEqual(book);
+      const result = await repository.create(bookData);
+
+      expect(result).toEqual(mockBook);
+      expect(prisma.book.create).toHaveBeenCalledWith({ data: bookData });
     });
   });
 
   describe('findByAuthorId', () => {
-    it('should return books by author id', () => {
-      const book1: Book = {
-        id: '1',
-        title: 'Harry Potter 1',
-        summary: 'First book',
-        publicationYear: 1997,
-        authorId: 'author-1',
-        isFavorite: false,
-      };
-      const book2: Book = {
-        id: '2',
-        title: 'Harry Potter 2',
-        summary: 'Second book',
-        publicationYear: 1998,
-        authorId: 'author-1',
-        isFavorite: false,
-      };
-      const book3: Book = {
-        id: '3',
-        title: 'Different Book',
-        summary: 'Different author',
-        publicationYear: 2000,
-        authorId: 'author-2',
-        isFavorite: false,
-      };
+    it('should return books by author id', async () => {
+      const mockBooks = [
+        { id: '1', title: 'Book 1', authorId: 'author-1' },
+        { id: '2', title: 'Book 2', authorId: 'author-1' },
+      ];
 
-      repository.create(book1);
-      repository.create(book2);
-      repository.create(book3);
+      jest.spyOn(prisma.book, 'findMany').mockResolvedValue(mockBooks as any);
 
-      const result = repository.findByAuthorId('author-1');
-      expect(result).toHaveLength(2);
-      expect(result).toContain(book1);
-      expect(result).toContain(book2);
-      expect(result).not.toContain(book3);
+      const result = await repository.findByAuthorId('author-1');
+
+      expect(result).toEqual(mockBooks);
+      expect(prisma.book.findMany).toHaveBeenCalledWith({ where: { authorId: 'author-1' } });
     });
   });
 
   describe('findFavorites', () => {
-    it('should return only favorite books', () => {
-      const book1: Book = {
-        id: '1',
-        title: 'Favorite Book',
-        summary: 'This is favorite',
-        publicationYear: 1997,
-        authorId: 'author-1',
-        isFavorite: true,
-      };
-      const book2: Book = {
-        id: '2',
-        title: 'Regular Book',
-        summary: 'Not favorite',
-        publicationYear: 1998,
-        authorId: 'author-1',
-        isFavorite: false,
-      };
+    it('should return only favorite books', async () => {
+      const mockFavorites = [
+        { id: '1', title: 'Favorite Book', isFavorite: true },
+      ];
 
-      repository.create(book1);
-      repository.create(book2);
+      jest.spyOn(prisma.book, 'findMany').mockResolvedValue(mockFavorites as any);
 
-      const result = repository.findFavorites();
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual(book1);
+      const result = await repository.findFavorites();
+
+      expect(result).toEqual(mockFavorites);
+      expect(prisma.book.findMany).toHaveBeenCalledWith({ where: { isFavorite: true } });
     });
   });
 });

@@ -1,70 +1,45 @@
 import { Injectable } from '@nestjs/common';
-import { IRepository } from '../utils/interfaces/repository.interfaces';
+import { PrismaService } from '../../prisma/prisma.service';
 import { Book } from './entities/book.entity';
 
 @Injectable()
-export class BooksRepository implements IRepository<Book> {
-  private books: Book[] = [];
+export class BooksRepository {
+  constructor(private prisma: PrismaService) {}
 
-  create(book: Book): Book {
-    this.books.push(book);
-    return book;
+  async create(data: Omit<Book, 'id'>): Promise<Book> {
+    return this.prisma.book.create({ data });
   }
 
-  findAll(): Book[] {
-    return this.books;
+  async findAll(): Promise<Book[]> {
+    return this.prisma.book.findMany();
   }
 
-  findById(id: string): Book | undefined {
-    return this.books.find(book => book.id === id);
+  async findById(id: string): Promise<Book | null> {
+    return this.prisma.book.findUnique({ where: { id } });
   }
 
-  update(id: string, updateData: Partial<Book>): Book | undefined {
-    const index = this.books.findIndex(book => book.id === id);
-    if (index === -1) return undefined;
-    
-    this.books[index] = { ...this.books[index], ...updateData };
-    return this.books[index];
+  async update(id: string, data: Partial<Book>): Promise<Book | null> {
+    try {
+      return await this.prisma.book.update({ where: { id }, data });
+    } catch {
+      return null;
+    }
   }
 
-  delete(id: string): boolean {
-    const index = this.books.findIndex(book => book.id === id);
-    if (index === -1) return false;
-    
-    this.books.splice(index, 1);
-    return true;
+  async delete(id: string): Promise<boolean> {
+    try {
+      await this.prisma.book.delete({ where: { id } });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
-  // Additional methods specific to books
-  findByAuthorId(authorId: string): Book[] {
-    return this.books.filter(book => book.authorId === authorId);
+  async findByAuthorId(authorId: string): Promise<Book[]> {
+    return this.prisma.book.findMany({ where: { authorId } });
   }
 
-  findFavorites(): Book[] {
-    return this.findAll().filter(book => book.isFavorite);
-  }
-
-  findByTitle(title: string): Book[] {
-    return this.findAll().filter(book => 
-      book.title.toLowerCase().includes(title.toLowerCase())
-    );
-  }
-
-  findByPublicationYear(year: number): Book[] {
-    return this.findAll().filter(book => book.publicationYear === year);
-  }
-
-  findByYearRange(startYear: number, endYear: number): Book[] {
-    return this.findAll().filter(book => 
-      book.publicationYear >= startYear && book.publicationYear <= endYear
-    );
-  }
-
-  countByAuthor(authorId: string): number {
-    return this.findByAuthorId(authorId).length;
-  }
-
-  exists(id: string): boolean {
-    return this.findById(id) !== undefined;
+  async findFavorites(): Promise<Book[]> {
+    return this.prisma.book.findMany({ where: { isFavorite: true } });
   }
 }

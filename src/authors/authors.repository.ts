@@ -1,51 +1,42 @@
 import { Injectable } from '@nestjs/common';
-import { IRepository } from '../utils/interfaces/repository.interfaces';
+import { PrismaService } from '../../prisma/prisma.service';
 import { Author } from './entities/author.entity';
 
 @Injectable()
-export class AuthorsRepository implements IRepository<Author> {
-  private authors: Author[] = [];
+export class AuthorsRepository {
+  constructor(private prisma: PrismaService) {}
 
-  create(author: Author): Author {
-    this.authors.push(author);
-    return author;
+  async create(data: Omit<Author, 'id'>): Promise<Author> {
+    return this.prisma.author.create({ data });
   }
 
-  findAll(): Author[] {
-    return this.authors;
+  async findAll(): Promise<Author[]> {
+    return this.prisma.author.findMany();
   }
 
-  findById(id: string): Author | undefined {
-    return this.authors.find(author => author.id === id);
+  async findById(id: string): Promise<Author | null> {
+    return this.prisma.author.findUnique({ where: { id } });
   }
 
-  update(id: string, updateData: Partial<Author>): Author | undefined {
-    const index = this.authors.findIndex(author => author.id === id);
-    if (index === -1) return undefined;
-    
-    this.authors[index] = { ...this.authors[index], ...updateData };
-    return this.authors[index];
+  async update(id: string, data: Partial<Author>): Promise<Author | null> {
+    try {
+      return await this.prisma.author.update({ where: { id }, data });
+    } catch {
+      return null;
+    }
   }
 
-  delete(id: string): boolean {
-    const index = this.authors.findIndex(author => author.id === id);
-    if (index === -1) return false;
-    
-    this.authors.splice(index, 1);
-    return true;
+  async delete(id: string): Promise<boolean> {
+    try {
+      await this.prisma.author.delete({ where: { id } });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
-  exists(id: string): boolean {
-    return this.findById(id) !== undefined;
-  }
-
-  findByName(name: string): Author | undefined {
-    return this.findAll().find(author => 
-      author.name.toLowerCase().includes(name.toLowerCase())
-    );
-  }
-
-  findByBirthYear(year: number): Author[] {
-    return this.findAll().filter(author => author.birthYear === year);
+  async exists(id: string): Promise<boolean> {
+    const count = await this.prisma.author.count({ where: { id } });
+    return count > 0;
   }
 }
